@@ -1,41 +1,41 @@
 #!/usr/bin/env python
 """
-WSGI application for LGTM Labs - serves static files from /static/ directory
-Compatible with Gandi web hosting
+Flask application for LGTM Labs
+Serves static files with proper routing
 """
+from flask import Flask, send_from_directory, redirect
 import os
-import mimetypes
 
-def application(environ, start_response):
-    """
-    WSGI application that serves static files.
-    Gandi automatically serves /static/ and /media/ directories,
-    but we'll handle root requests to redirect to static files.
-    """
-    
-    # Get the request path
-    path = environ.get('PATH_INFO', '/')
-    
-    # For root path, redirect to the static index.html
-    if path == '/' or path == '':
-        # Redirect to /static/index.html
-        start_response('301 Moved Permanently', [
-            ('Location', '/static/index.html'),
-            ('Content-Type', 'text/html')
-        ])
-        return [b'<html><body><a href="/static/index.html">Redirecting...</a></body></html>']
-    
-    # For any other path, try to serve from static
-    if not path.startswith('/static/'):
-        # Redirect to static version
-        redirect_path = '/static' + path
-        start_response('301 Moved Permanently', [
-            ('Location', redirect_path),
-            ('Content-Type', 'text/html')
-        ])
-        return [b'<html><body>Redirecting to static files...</body></html>']
-    
-    # Let Gandi's server handle static files directly
-    # This should not be reached as Gandi serves /static/ automatically
-    start_response('404 Not Found', [('Content-Type', 'text/plain')])
-    return [b'File not found. Static files should be accessed via /static/ path.']
+# Create Flask app
+app = Flask(__name__)
+
+# Get the directory where this file is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+
+@app.route('/')
+def index():
+    """Serve the main index.html file"""
+    return send_from_directory(STATIC_DIR, 'index.html')
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    """Serve static files from /static/ directory"""
+    return send_from_directory(STATIC_DIR, path)
+
+@app.route('/<path:path>')
+def catch_all(path):
+    """Catch all other routes and try to serve from static"""
+    # Check if file exists in static directory
+    file_path = os.path.join(STATIC_DIR, path)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_from_directory(STATIC_DIR, path)
+    # Otherwise redirect to index
+    return redirect('/')
+
+# WSGI application object for Gandi
+application = app
+
+# For local testing
+if __name__ == '__main__':
+    app.run(debug=True, port=8000)

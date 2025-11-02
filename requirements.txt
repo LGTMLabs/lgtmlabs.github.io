@@ -1,2 +1,2 @@
-# Virtualenv is needed for Gandi's build process
-virtualenv==20.24.5
+Flask==2.3.3
+Werkzeug==2.3.7
