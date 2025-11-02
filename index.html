@@ -298,11 +298,12 @@
         
         // Touch support for mobile
         window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
             if (e.touches.length > 0) {
                 mouseX = e.touches[0].clientX;
                 mouseY = e.touches[0].clientY;
             }
-        });
+        }, { passive: false });
         
         window.addEventListener('touchstart', (e) => {
             if (e.touches.length > 0) {
@@ -311,6 +312,20 @@
                 spawnGlider(gridX, gridY);
             }
         });
+        
+        // Prevent all scrolling on mobile
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        
+        // Prevent pull-to-refresh
+        document.body.style.overscrollBehavior = 'none';
         
         resizeCanvas();
         animate();
