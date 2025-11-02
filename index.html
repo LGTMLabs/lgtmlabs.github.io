@@ -9,18 +9,41 @@
     <meta property="og:description" content="Quality Engineering at the Intersection of Tech & Testing">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="particles"></canvas>
     
     <main class="content">
         <h1 class="brand">LGTM Labs</h1>
+        <p class="tagline"><span class="typewriter"></span><span class="cursor">|</span></p>
         <a href="mailto:contact@lgtmlabs.com" class="contact">contact@lgtmlabs.com</a>
     </main>
-
+    
     <script>
+        // Terminal typing effect
+        const taglines = ['Build. Test. Trust.'];
+        let currentTagline = 0;
+        const typewriter = document.querySelector('.typewriter');
+        const cursor = document.querySelector('.cursor');
+        
+        function typeText(text, element) {
+            element.textContent = '';
+            let i = 0;
+            const typing = setInterval(() => {
+                if (i < text.length) {
+                    element.textContent += text[i];
+                    i++;
+                } else {
+                    clearInterval(typing);
+                    // Just stop after typing, don't loop
+                }
+            }, 100);
+        }
+        
+        typeText(taglines[0], typewriter);
+        
         // Conway's Game of Life with mouse gravity effect
         const canvas = document.getElementById('particles');
         const ctx = canvas.getContext('2d');
@@ -32,6 +55,8 @@
         let mouseY = 0;
         let colorCycle = 0;
         let frameCount = 0;
+        let generation = 0;
+        let cellCount = 0;
         
         // Cell ages for color effects
         let cellAges;
@@ -83,6 +108,9 @@
         }
         
         function updateGrid() {
+            cellCount = 0;
+            generation++;
+            
             // Apply Conway's Game of Life rules
             for (let i = 0; i < cols; i++) {
                 for (let j = 0; j < rows; j++) {
@@ -93,15 +121,19 @@
                     if (state === 0 && neighbors === 3) {
                         nextGrid[i][j] = 1;
                         cellAges[i][j] = 0; // New cell
+                        cellCount++;
                     } else if (state === 1 && (neighbors === 2 || neighbors === 3)) {
                         nextGrid[i][j] = 1;
                         cellAges[i][j] = Math.min(cellAges[i][j] + 1, 100); // Age the cell
+                        cellCount++;
                     } else {
                         nextGrid[i][j] = 0;
                         cellAges[i][j] = 0;
                     }
                 }
             }
+            
+            // Stats tracking (internal only now)
             
             // Mouse gravity effect - spawn cells near cursor
             const gridMouseX = Math.floor(mouseX / cellSize);
@@ -172,8 +204,8 @@
                         const age = cellAges[i][j];
                         const ageEffect = 1 - (age / 100) * 0.5; // Fade with age
                         
-                        // HSL color cycling
-                        const hue = (colorCycle + (i * 2) + (j * 2) + age * 5) % 360;
+                        // Blue-cyan color range only
+                        const hue = 180 + ((colorCycle + (i * 2) + (j * 2) + age * 5) % 60);
                         const saturation = 70 + (30 * ageEffect);
                         const lightness = 30 + (40 * ageEffect);
                         
@@ -190,7 +222,7 @@
                         // Glow effect for new cells (reduced in dead zone)
                         if (age < 5 && deadZoneEffect > 0.5) {
                             ctx.shadowBlur = 5;
-                            ctx.shadowColor = `hsla(${hue}, 100%, 60%, ${0.5 * (1 - age / 5) * deadZoneEffect})`;
+                            ctx.shadowColor = `hsla(${hue}, 80%, 50%, ${0.3 * (1 - age / 5) * deadZoneEffect})`;
                             ctx.fillRect(x, y, cellSizeAdjusted, cellSizeAdjusted);
                             ctx.shadowBlur = 0;
                         }
@@ -202,7 +234,7 @@
         function drawMouseEffect() {
             // Draw gravity well effect at mouse position
             const gradient = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 80);
-            const hue = colorCycle % 360;
+            const hue = 180 + (colorCycle % 60);
             gradient.addColorStop(0, `hsla(${hue}, 100%, 60%, 0.1)`);
             gradient.addColorStop(1, 'transparent');
             
@@ -210,9 +242,7 @@
             ctx.fillRect(mouseX - 80, mouseY - 80, 160, 160);
         }
         
-        function animate() {
-            frameCount++;
-            
+        function animate() {            
             // Update Game of Life every few frames for visible speed
             if (frameCount % 3 === 0) {
                 updateGrid();
