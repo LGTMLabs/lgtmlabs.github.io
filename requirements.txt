@@ -1,0 +1,2 @@
+# No external dependencies required for static site serving
+# This file is required by Gandi but can be empty
