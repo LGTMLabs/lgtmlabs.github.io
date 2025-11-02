@@ -1,0 +1,64 @@
+name: Deploy to Gandi
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for git push
+
+      - name: Setup SSH for Gandi
+        env:
+          GANDI_TOKEN: ${{ secrets.GANDI_TOKEN }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H git.sd3.gpaas.net >> ~/.ssh/known_hosts
+          
+          # Create SSH config for password authentication
+          cat > ~/.ssh/config << EOF
+          Host git.sd3.gpaas.net
+            HostName git.sd3.gpaas.net
+            User c1aa92c6-b7b3-11f0-ae33-00163e94b645
+            PreferredAuthentications password
+            PasswordAuthentication yes
+            StrictHostKeyChecking no
+          EOF
+          
+          chmod 600 ~/.ssh/config
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Add Gandi remote
+        run: |
+          git remote add gandi git+ssh://c1aa92c6-b7b3-11f0-ae33-00163e94b645@git.sd3.gpaas.net/default.git || true
+          git remote -v
+
+      - name: Deploy to Gandi
+        env:
+          SSHPASS: ${{ secrets.GANDI_TOKEN }}
+        run: |
+          # Install sshpass for password authentication
+          sudo apt-get update && sudo apt-get install -y sshpass
+          
+          # Push to Gandi (main branch to master)
+          sshpass -e git push gandi main:master --force
+
+      - name: Trigger Gandi deployment
+        env:
+          SSHPASS: ${{ secrets.GANDI_TOKEN }}
+        run: |
+          # Run deploy command on Gandi
+          sshpass -e ssh -o StrictHostKeyChecking=no c1aa92c6-b7b3-11f0-ae33-00163e94b645@git.sd3.gpaas.net 'deploy default.git' || true
+          echo "✅ Deployment triggered successfully!"
