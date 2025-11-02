@@ -1,2 +1,0 @@
-# No dependencies required
-# Static files are served directly by Apache from /static/ directory
