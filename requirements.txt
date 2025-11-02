@@ -1,2 +1,2 @@
-# No external dependencies required for static site serving
-# This file is required by Gandi but can be empty
+# Virtualenv is needed for Gandi's build process
+virtualenv==20.24.5
