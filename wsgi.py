@@ -2,40 +2,39 @@
 """
 Flask application for LGTM Labs
 Serves static files with proper routing
+Compatible with Python 3.13
 """
-from flask import Flask, send_from_directory, redirect
 import os
+import sys
 
-# Create Flask app
-app = Flask(__name__)
+# Ensure we can import Flask
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Get the directory where this file is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
+from flask import Flask, send_from_directory
+
+# Create Flask app with explicit static folder
+app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# Get the static directory path
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 @app.route('/')
 def index():
     """Serve the main index.html file"""
     return send_from_directory(STATIC_DIR, 'index.html')
 
-@app.route('/static/<path:path>')
-def serve_static(path):
-    """Serve static files from /static/ directory"""
-    return send_from_directory(STATIC_DIR, path)
+@app.route('/<path:filename>')
+def serve_file(filename):
+    """Serve any file from static directory"""
+    if os.path.exists(os.path.join(STATIC_DIR, filename)):
+        return send_from_directory(STATIC_DIR, filename)
+    # Fallback to index.html
+    return send_from_directory(STATIC_DIR, 'index.html')
 
-@app.route('/<path:path>')
-def catch_all(path):
-    """Catch all other routes and try to serve from static"""
-    # Check if file exists in static directory
-    file_path = os.path.join(STATIC_DIR, path)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return send_from_directory(STATIC_DIR, path)
-    # Otherwise redirect to index
-    return redirect('/')
-
-# WSGI application object for Gandi
+# WSGI application object for Gandi - this is what uWSGI looks for
 application = app
 
 # For local testing
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    print(f"Serving static files from: {STATIC_DIR}")
+    app.run(debug=True, host='0.0.0.0', port=8000)
